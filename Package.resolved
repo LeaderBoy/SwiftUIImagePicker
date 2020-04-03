@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Localizable",
+        "repositoryURL": "https://github.com/LeaderBoy/Localizable.git",
+        "state": {
+          "branch": null,
+          "revision": "b09062b618affb15a234b8a29c16b6e5ba82ddd1",
+          "version": "1.0.2"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
