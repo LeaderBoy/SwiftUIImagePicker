@@ -87,9 +87,8 @@ public class UIKitPagerBar: UIView {
         func needOffset(width : CGFloat,contentSize : CGSize) -> CGFloat {
             let centerX = width / 2
             let contentWidth = contentSize.width
-            /// 需要中心偏移的距离
             let centerOffset = midX - centerX
-            if centerOffset <= 0 {
+            if centerOffset <= 0 || contentWidth <= width {
                 return 0
             } else {
                 if (centerOffset + width) > contentWidth {
