@@ -14,11 +14,16 @@ public struct PagerBar : UIViewRepresentable {
     @Binding public var currentPage : Int
     @Binding public var progress : CGFloat
     
+    var undlineEnable : Bool = true
+    var undlineColor : UIColor = UIColor.purple
+    
     public var items : [PageBarItem]
     
-    public init(currentPage : Binding<Int>,progress : Binding<CGFloat>,items: [PageBarItem]) {
+    public init(currentPage : Binding<Int>,progress : Binding<CGFloat>,items: [PageBarItem],undlineEnable : Bool = true,undlineColor : UIColor = .purple) {
         self._currentPage = currentPage
         self._progress = progress
+        self.undlineColor = undlineColor
+        self.undlineEnable = undlineEnable
         self.items = items
     }
     
@@ -27,7 +32,8 @@ public struct PagerBar : UIViewRepresentable {
     }
     
     public func makeUIView(context: Context) -> UIKitPagerBar {
-        let view = UIKitPagerBar(currentPage: $currentPage,progress: $progress, items: items)
+        let view = UIKitPagerBar(currentPage: $currentPage,progress: $progress, items: items,undlineEnable: undlineEnable)
+        view.undlineColor = undlineColor
         return view
     }
     
@@ -107,12 +113,18 @@ public class UIKitPagerBar: UIView {
             let centerOffset = currentItemFrame.needOffset(width: width, contentSize: contentSize)
             collectionView.setContentOffset(CGPoint(x: centerOffset, y: 0), animated: true)
             collectionView.reloadData()
+            UIView.animate(withDuration: 0.25) {
+               var center = self.undline.center
+               center.x = currentItemFrame.midX
+               self.undline.center = center
+           }
         }
     }
     
     @Binding var progress : CGFloat {
         didSet {
             collectionView.reloadData()
+            updateUndline()
         }
     }
     
@@ -147,17 +159,74 @@ public class UIKitPagerBar: UIView {
         return frames
     }()
     
-    let items : [PageBarItem]
-    var itemSpacing : CGFloat = 20
+    lazy var undline: UIView = {
+        let undlineView = UIView()
+        undlineView.backgroundColor = UIColor.purple
+        undlineView.frame = CGRect(x: 0, y: 0, width: 30, height: 5)
+        undlineView.layer.cornerRadius = 2.5
+        
+        return undlineView
+    }()
     
+    private var position : CGFloat {
+        get {
+            return self.itemFrames[currentPage].midX
+        }
+    }
+
+    private var nextPosition : CGFloat {
+        get {
+            if itemFrames.count > (currentPage + 1) {
+                return self.itemFrames[currentPage + 1].midX
+            } else {
+                return 0
+            }
+        }
+    }
+
+    private var prePosition : CGFloat {
+        get {
+            if currentPage - 1 >= 0 {
+                return self.itemFrames[currentPage - 1].midX
+            } else {
+                return 0
+            }
+        }
+    }
+
+    private var offset :  CGFloat {
+        get {
+            if self.progress > 0  {
+                if nextPosition == 0 {
+                    /// max offset
+                    return 50 * self.progress
+                }
+                return abs(self.nextPosition - self.position) * self.progress
+            } else if self.progress <= 0 {
+                if self.prePosition == 0 {
+                    return 50 * self.progress
+                }
+                return (self.position - self.prePosition) * self.progress
+            }
+            return 0
+        }
+    }
+    
+    private let items : [PageBarItem]
+    private var itemSpacing : CGFloat = 20
     private var collectionView : UICollectionView!
     
-    init(currentPage: Binding<Int>,progress: Binding<CGFloat>,items : [PageBarItem]) {
+    var undlineEnable : Bool
+    var undlineColor : UIColor = .purple
+    
+    init(currentPage: Binding<Int>,progress: Binding<CGFloat>,items : [PageBarItem],undlineEnable : Bool) {
         self.items = items
         self._currentPage = currentPage
         self._progress = progress
+        self.undlineEnable = undlineEnable
         super.init(frame: .zero)
         layoutCollectionView()
+        addUndlineView()
     }
     
     required init?(coder: NSCoder) {
@@ -183,6 +252,42 @@ public class UIKitPagerBar: UIView {
         DispatchQueue.main.async {
             self.collectionView.selectItem(at: indexPath, animated: false, scrollPosition: .bottom)
         }
+    }
+    
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        layoutUndlineView()
+    }
+    
+    func addUndlineView() {
+        if !undlineEnable {
+            return
+        }
+        collectionView.addSubview(undline)
+    }
+    
+    func layoutUndlineView() {
+        if !undlineEnable {
+            return
+        }
+        var undlineFrame = undline.frame
+        let reasonableY = collectionView.bounds.size.height - undlineFrame.size.height
+        if undlineFrame.origin.y != reasonableY {
+            undlineFrame.origin.y = reasonableY
+            undline.frame = undlineFrame
+        }
+    }
+    
+    /// Update undlineView position
+    func updateUndline() {
+        if !undlineEnable {
+            return
+        }
+        
+        let current = itemFrames[currentPage].midX
+        var center = undline.center
+        center.x = offset + current
+        undline.center = center
     }
 }
 

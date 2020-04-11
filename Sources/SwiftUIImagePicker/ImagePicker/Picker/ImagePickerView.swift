@@ -22,6 +22,9 @@ public struct ImagePickerView: View {
     public var folders : [ImageFetcher.Folder]
     public var barItems : [PageBarItem]
     
+    public var undlineEnable : Bool = false
+    public var undlineColor : UIColor = UIColor.purple
+    
     @State private var progress : CGFloat = 0
     
     public init(currentPage: Binding<Int>, selectedImage: Binding<UIImage?>, folders: [ImageFetcher.Folder], barItems: [PageBarItem]) {
@@ -34,7 +37,7 @@ public struct ImagePickerView: View {
     public var body: some View {
         VStack {
             PageView(currentPage: $currentPage, progress: $progress, views: createFoldersView())
-            PagerBar(currentPage: $currentPage, progress: $progress, items: barItems)
+            PagerBar(currentPage: $currentPage, progress: $progress, items: barItems,undlineEnable:undlineEnable,undlineColor:undlineColor)
             .frame(height: 60)
         }
         
